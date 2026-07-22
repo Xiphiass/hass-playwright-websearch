@@ -9,6 +9,7 @@ from homeassistant.helpers import llm
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.playwright_websearch.const import (
+    CONF_FULL_PAGE_CAP,
     CONF_PLAYWRIGHT_WS_URL,
     CONF_SEARXNG_URL,
     DOMAIN,
@@ -18,13 +19,14 @@ from custom_components.playwright_websearch.llm_api import OpenUrlTool
 from .conftest import FakePage, make_async_playwright
 
 
-def _entry() -> MockConfigEntry:
+def _entry(options: dict | None = None) -> MockConfigEntry:
     return MockConfigEntry(
         domain=DOMAIN,
         data={
             CONF_SEARXNG_URL: "http://searxng.local",
             CONF_PLAYWRIGHT_WS_URL: "ws://playwright.local:3000",
         },
+        options=options or {},
     )
 
 
@@ -65,6 +67,43 @@ async def test_open_url_returns_rendered_text(
     assert patch_playwright.connect_calls == ["ws://playwright.local:3000"]
     # Connect-per-call: the browser was torn down after use.
     assert patch_playwright.browsers[0].closed is True
+
+
+async def test_open_url_truncates_to_full_page_cap_on_paragraph_boundary(
+    hass: HomeAssistant, patch_playwright
+) -> None:
+    """open_url truncates to the full-page cap on a paragraph boundary."""
+    patch_playwright.page = FakePage(
+        body_text="First para kept.\n\n" + ("x" * 500),
+        page_title="Long Page",
+        url="https://example.com/long",
+    )
+    tool = OpenUrlTool(_entry({CONF_FULL_PAGE_CAP: 30}))
+
+    result = await tool.async_call(
+        hass, _tool_input("https://example.com/long"), _llm_context()
+    )
+
+    assert result["text"] == "First para kept."
+
+
+async def test_open_url_under_cap_returns_full_text(
+    hass: HomeAssistant, patch_playwright
+) -> None:
+    """A page shorter than the full-page cap is returned unchanged."""
+    body = "Short enough to fit under the cap."
+    patch_playwright.page = FakePage(
+        body_text=body,
+        page_title="Short Page",
+        url="https://example.com/short",
+    )
+    tool = OpenUrlTool(_entry({CONF_FULL_PAGE_CAP: 20000}))
+
+    result = await tool.async_call(
+        hass, _tool_input("https://example.com/short"), _llm_context()
+    )
+
+    assert result["text"] == body
 
 
 async def test_open_url_error_is_structured_not_raised(hass: HomeAssistant) -> None:

@@ -22,6 +22,7 @@ from .budget import truncate_to_cap
 from .const import (
     CONF_CONCURRENCY,
     CONF_CONTENT_FLOOR,
+    CONF_FULL_PAGE_CAP,
     CONF_NUM_RESULTS,
     CONF_PER_RESULT_CAP,
     CONF_PLAYWRIGHT_WS_URL,
@@ -30,6 +31,7 @@ from .const import (
     CONF_TOTAL_CEILING,
     DEFAULT_CONCURRENCY,
     DEFAULT_CONTENT_FLOOR,
+    DEFAULT_FULL_PAGE_CAP,
     DEFAULT_NUM_RESULTS,
     DEFAULT_PER_RESULT_CAP,
     DEFAULT_RENDER_TIMEOUT,
@@ -89,6 +91,9 @@ class OpenUrlTool(llm.Tool):
         content_floor = self._entry.options.get(
             CONF_CONTENT_FLOOR, DEFAULT_CONTENT_FLOOR
         )
+        full_page_cap = self._entry.options.get(
+            CONF_FULL_PAGE_CAP, DEFAULT_FULL_PAGE_CAP
+        )
 
         result = await render_page(ws_url, url, timeout, content_floor)
 
@@ -98,7 +103,7 @@ class OpenUrlTool(llm.Tool):
         return {
             "url": result["final_url"],
             "title": result["title"],
-            "text": result["text"],
+            "text": truncate_to_cap(result["text"], full_page_cap),
         }
 
 
