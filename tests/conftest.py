@@ -33,22 +33,29 @@ def auto_enable_custom_integrations(
 
 @dataclass
 class FakePage:
-    """A fake Playwright page returning canned rendered content."""
+    """A fake Playwright page returning canned rendered content.
+
+    ``goto_error`` lets a test simulate a navigation failure (e.g. a
+    ``PlaywrightTimeoutError``) while ``evaluate`` still returns the canned partial
+    content — the injected extraction JS runs against whatever is in the DOM.
+    """
 
     body_text: str = "canned rendered text"
     page_title: str = "Canned Title"
     url: str = "https://example.com/final"
+    goto_error: Exception | None = None
 
     async def goto(
         self, url: str, wait_until: str | None = None, timeout: int | None = None
     ) -> None:
+        if self.goto_error is not None:
+            raise self.goto_error
         return None
 
-    async def inner_text(self, selector: str) -> str:
-        return self.body_text
-
-    async def title(self) -> str:
-        return self.page_title
+    async def evaluate(self, script: str) -> dict[str, Any]:
+        # Stands in for the injected extraction JS (real fidelity isn't unit-testable
+        # through a fake); returns the canned title/text the render path assembles from.
+        return {"title": self.page_title, "text": self.body_text}
 
 
 @dataclass
