@@ -39,6 +39,7 @@ from .const import (
 )
 from .render import render_page
 from .searxng import async_search
+from .ssrf import trusted_hosts
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,6 +85,7 @@ class OpenUrlTool(llm.Tool):
     ) -> JsonObjectType:
         """Render the requested URL and return its text to the LLM."""
         url = tool_input.tool_args["url"]
+        searxng_url = self._entry.data[CONF_SEARXNG_URL]
         ws_url = self._entry.data[CONF_PLAYWRIGHT_WS_URL]
         timeout = self._entry.options.get(
             CONF_RENDER_TIMEOUT, DEFAULT_RENDER_TIMEOUT
@@ -94,8 +96,9 @@ class OpenUrlTool(llm.Tool):
         full_page_cap = self._entry.options.get(
             CONF_FULL_PAGE_CAP, DEFAULT_FULL_PAGE_CAP
         )
+        trusted = trusted_hosts(searxng_url, ws_url)
 
-        result = await render_page(ws_url, url, timeout, content_floor)
+        result = await render_page(ws_url, url, timeout, content_floor, trusted)
 
         if result["status"] == "error":
             return {"error": result.get("error", "render failed")}
@@ -135,6 +138,7 @@ class SearchWebTool(llm.Tool):
         total_ceiling = options.get(CONF_TOTAL_CEILING, DEFAULT_TOTAL_CEILING)
         concurrency = options.get(CONF_CONCURRENCY, DEFAULT_CONCURRENCY)
         content_floor = options.get(CONF_CONTENT_FLOOR, DEFAULT_CONTENT_FLOOR)
+        trusted = trusted_hosts(searxng_url, ws_url)
 
         try:
             results = await async_search(hass, searxng_url, query, num_results)
@@ -151,7 +155,9 @@ class SearchWebTool(llm.Tool):
 
         async def _render_one(target_url: str):
             async with sem:
-                return await render_page(ws_url, target_url, timeout, content_floor)
+                return await render_page(
+                    ws_url, target_url, timeout, content_floor, trusted
+                )
 
         rendered = await asyncio.gather(
             *(_render_one(result["url"]) for result in results)

@@ -1,9 +1,9 @@
 """Render a page via the external Playwright Server.
 
 This module is the single fake-boundary seam for the whole render pipeline. Everything
-above ``page`` (result assembly, and — in later tickets — extraction, budgeting, and
-SSRF checks) is exercised in tests by faking the Playwright client here, so no real
-Chromium and no network are needed.
+above ``page`` (result assembly, extraction, budgeting) is exercised in tests by faking
+the Playwright client here, so no real Chromium and no network are needed. SSRF
+validation runs before navigation via :mod:`.ssrf` (its own DNS seam, ADR 0004).
 
 Per ADR 0001 the integration embeds no browser: it connects over websocket to an
 off-the-shelf Playwright Server via ``browserType.connect`` using a fresh connection
@@ -17,6 +17,8 @@ import logging
 from typing import TypedDict
 
 from playwright.async_api import TimeoutError as PlaywrightTimeoutError, async_playwright
+
+from .ssrf import async_check_target
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +60,11 @@ class RenderResult(TypedDict, total=False):
 
 
 async def render_page(
-    ws_url: str, target_url: str, timeout: int, content_floor: int
+    ws_url: str,
+    target_url: str,
+    timeout: int,
+    content_floor: int,
+    trusted_hosts: frozenset[str] = frozenset(),
 ) -> RenderResult:
     """Connect-per-call, render ``target_url``, return a structured result.
 
@@ -73,6 +79,19 @@ async def render_page(
     (the polling-forever-SPA case, ADR 0003); below the floor it is ``empty``.
     """
     timeout_ms = timeout * 1000
+
+    # SSRF guard (ADR 0004): resolve and refuse private targets before any navigation.
+    reason = await async_check_target(target_url, trusted_hosts)
+    if reason is not None:
+        _LOGGER.debug("Render blocked for %s: %s", target_url, reason)
+        return RenderResult(
+            status="error",
+            title=None,
+            final_url=target_url,
+            text="",
+            word_count=0,
+            error=reason,
+        )
 
     async with async_playwright() as pw:
         browser = None
