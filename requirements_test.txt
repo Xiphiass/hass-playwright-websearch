@@ -1,2 +1,1 @@
 pytest-homeassistant-custom-component
-playwright==1.55.0

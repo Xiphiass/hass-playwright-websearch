@@ -9,7 +9,9 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+from custom_components.playwright_websearch.pw_client import (
+    TimeoutError as PlaywrightTimeoutError,
+)
 
 from custom_components.playwright_websearch.render import render_page
 

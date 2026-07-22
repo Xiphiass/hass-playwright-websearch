@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 from typing import TypedDict
 
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError, async_playwright
+from .pw_client import TimeoutError as PlaywrightTimeoutError, async_playwright
 
 from .ssrf import async_check_target
 

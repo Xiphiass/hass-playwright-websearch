@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 import pytest
 
 from homeassistant.core import HomeAssistant
@@ -26,6 +25,9 @@ from custom_components.playwright_websearch.const import (
     DOMAIN,
 )
 from custom_components.playwright_websearch.llm_api import SearchWebTool
+from custom_components.playwright_websearch.pw_client import (
+    TimeoutError as PlaywrightTimeoutError,
+)
 
 from .conftest import (
     ConcurrencyTracker,
