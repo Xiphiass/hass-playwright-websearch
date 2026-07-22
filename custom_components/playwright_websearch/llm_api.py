@@ -16,7 +16,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv, llm
 from homeassistant.util.json import JsonObjectType
 
-from .const import CONF_PLAYWRIGHT_WS_URL, CONF_RENDER_TIMEOUT, DEFAULT_RENDER_TIMEOUT
+from .const import (
+    CONF_CONTENT_FLOOR,
+    CONF_PLAYWRIGHT_WS_URL,
+    CONF_RENDER_TIMEOUT,
+    DEFAULT_CONTENT_FLOOR,
+    DEFAULT_RENDER_TIMEOUT,
+)
 from .render import render_page
 
 API_PROMPT = (
@@ -54,8 +60,11 @@ class OpenUrlTool(llm.Tool):
         timeout = self._entry.options.get(
             CONF_RENDER_TIMEOUT, DEFAULT_RENDER_TIMEOUT
         )
+        content_floor = self._entry.options.get(
+            CONF_CONTENT_FLOOR, DEFAULT_CONTENT_FLOOR
+        )
 
-        result = await render_page(ws_url, url, timeout)
+        result = await render_page(ws_url, url, timeout, content_floor)
 
         if result["status"] == "error":
             return {"error": result.get("error", "render failed")}
