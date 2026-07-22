@@ -13,7 +13,9 @@ its JavaScript), and returns clean readable text.
 
 - **Integration** — this custom component. It runs inside HA Core, registers the LLM
   tools, and owns all render/extract/budget logic. It drives a remote browser over
-  websocket via the Playwright client library; it does **not** run Chromium itself.
+  websocket via a small vendored wire-protocol client (no `playwright` dependency — that
+  package has no musllinux wheel and won't install on HA OS/Container; see ADR 0006); it
+  does **not** run Chromium itself.
 - **Playwright Server** — an external `mcr.microsoft.com/playwright` container running
   `playwright run-server`. It exposes a raw websocket the integration connects to via
   `browserType.connect`. Its endpoint is user-configurable, mirroring SearXNG. We do not

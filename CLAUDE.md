@@ -8,7 +8,7 @@ tools returning the *rendered* text of pages, not just snippets. The integration
 HA Core and owns all render/extract/budget logic; it drives an **external** Playwright
 Server over websocket (`browserType.connect`) and embeds no Chromium itself. SearXNG
 supplies result URLs/snippets. See [`CONTEXT.md`](CONTEXT.md) for the glossary and
-`docs/adr/` for the five architecture decisions.
+`docs/adr/` for the six architecture decisions.
 
 ## Layout
 
@@ -17,6 +17,10 @@ supplies result URLs/snippets. See [`CONTEXT.md`](CONTEXT.md) for the glossary a
     returns a structured `RenderResult` (`{status, title, final_url, text, word_count,
     error?}`); it never raises for render problems (ADR 0003). All fake-boundary tests
     patch `render.async_playwright`.
+  - `pw_client.py` — vendored pure-Python client for the Playwright Server wire protocol
+    (ADR 0006). `render.py` imports `async_playwright`/`TimeoutError` from here, not the
+    `playwright` package (which has no musllinux wheel). Mirrors just the object surface
+    `render.py` uses, so the fake boundary is unchanged.
   - `llm_api.py` — `WebSearchAPI(llm.API)` + the `Tool` subclasses (currently `open_url`).
   - `config_flow.py` — config flow (SearXNG + Playwright ws URLs) and options flow (tunables).
   - `const.py` — `DOMAIN`, config keys, and `DEFAULT_*` tunables.
@@ -27,7 +31,9 @@ supplies result URLs/snippets. See [`CONTEXT.md`](CONTEXT.md) for the glossary a
 
 - **Respect the ADRs** in `docs/adr/` — they encode deliberate decisions (external
   browser, integration-owns-extraction, structured render result, SSRF-in-integration,
-  no HTTP fallback). Don't reintroduce an `aiohttp`/BeautifulSoup fetch path.
+  no HTTP fallback, vendored wire-protocol client). Don't reintroduce an
+  `aiohttp`/BeautifulSoup fetch path, and don't re-add the `playwright` dependency
+  (ADR 0006: no musllinux wheel).
 - **Test through the fake boundary**, not internals: fake the Playwright client + SearXNG
   response and assert the tools' returned structure. No real Chromium, no network.
 - Run tests with `pytest` (see [`README.md`](README.md) for venv setup).
