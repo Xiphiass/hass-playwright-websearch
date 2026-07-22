@@ -1,11 +1,15 @@
 """Generate the brand icon for the Playwright Web Search integration.
 
 The icon is rendered once at 512x512 (the source of truth) and downsampled to
-256x256 with a high-quality LANCZOS filter, producing the two PNGs required by
-the home-assistant/brands repo:
+256x256 with a high-quality LANCZOS filter, producing the two PNGs Home Assistant
+serves from the integration's own ``brand/`` folder:
 
-    icon@2x.png  512x512
-    icon.png     256x256
+    custom_components/playwright_websearch/brand/icon@2x.png  512x512
+    custom_components/playwright_websearch/brand/icon.png     256x256
+
+HA (>= 2024.x, present in 2026.7) resolves an integration's brand images from a
+local ``brand/`` folder first, falling back to the brands.home-assistant.io CDN
+only when it is absent. See homeassistant/components/brands/__init__.py.
 
 Concept: a magnifying glass (web search) over a stylized browser window whose
 content lines suggest the *rendered* page text this integration returns. Flat,
@@ -99,7 +103,10 @@ def render(size: int) -> Image.Image:
 
 
 def main() -> None:
-    out_dir = Path(__file__).resolve().parent
+    # Write directly into the integration's brand/ folder, which HA serves.
+    repo_root = Path(__file__).resolve().parent.parent
+    out_dir = repo_root / "custom_components" / "playwright_websearch" / "brand"
+    out_dir.mkdir(parents=True, exist_ok=True)
     master = render(CANVAS)
 
     icon2x = master.resize((BASE, BASE), Image.LANCZOS)
