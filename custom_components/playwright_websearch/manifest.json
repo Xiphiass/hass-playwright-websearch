@@ -1,0 +1,11 @@
+{
+  "domain": "playwright_websearch",
+  "name": "Playwright Web Search",
+  "codeowners": ["@Xiphiass"],
+  "config_flow": true,
+  "documentation": "https://github.com/Xiphiass/hass-playwright-websearch",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Xiphiass/hass-playwright-websearch/issues",
+  "requirements": ["playwright==1.55.0"],
+  "version": "0.1.0"
+}
