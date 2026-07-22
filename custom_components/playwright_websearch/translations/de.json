@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Playwright Websuche",
+        "description": "Geben Sie Ihre SearXNG-Instanz und den WebSocket-Endpunkt des externen Playwright-Servers ein.",
+        "data": {
+          "searxng_url": "SearXNG-URL",
+          "playwright_ws_url": "WebSocket-URL des Playwright-Servers"
+        },
+        "data_description": {
+          "searxng_url": "Basis-URL Ihrer SearXNG-Metasuchinstanz.",
+          "playwright_ws_url": "ws://-Endpunkt eines Playwright-Servers (microsoft/playwright mit »playwright run-server«)."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Playwright Websuche ist bereits konfiguriert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Einstellbare Standardwerte",
+        "data": {
+          "num_results": "Anzahl der zu rendernden Ergebnisse",
+          "render_timeout": "Render-Zeitlimit (Sekunden)",
+          "per_result_cap": "Zeichenbegrenzung pro Ergebnis",
+          "total_ceiling": "Gesamtzeichenobergrenze",
+          "full_page_cap": "Zeichenbegrenzung für ganze Seite (open_url)",
+          "concurrency": "Gleichzeitige Render-Begrenzung",
+          "content_floor": "Minimale Wortanzahl zum Behalten eines Teil-Renders"
+        }
+      }
+    }
+  }
+}
