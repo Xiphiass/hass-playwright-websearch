@@ -29,6 +29,39 @@ def auto_enable_custom_integrations(
     return
 
 
+# --- Fake DNS resolution (SSRF seam) ----------------------------------------------
+# render_page now resolves every target before navigating (ADR 0004). ssrf._resolve is
+# the DNS seam, mirroring render.async_playwright: patching it keeps every test
+# network-free. By default every host resolves to a public IP so existing render/tool
+# tests still pass; tests that care about SSRF override the mapping via make_resolver.
+
+_PUBLIC_IP = "93.184.216.34"  # a stand-in public address (example.com's old IP)
+
+
+def make_resolver(
+    mapping: dict[str, list[str]] | None = None, default: list[str] | None = None
+) -> Callable[[str], Any]:
+    """Build a fake ``ssrf._resolve`` returning canned IPs by hostname."""
+    resolved_default = default if default is not None else [_PUBLIC_IP]
+
+    async def _fake_resolve(host: str) -> list[str]:
+        if mapping is not None and host in mapping:
+            return mapping[host]
+        return resolved_default
+
+    return _fake_resolve
+
+
+@pytest.fixture(autouse=True)
+def patch_resolve() -> Generator[None, None, None]:
+    """Resolve every host to a public IP by default so no real DNS is hit."""
+    with patch(
+        "custom_components.playwright_websearch.ssrf._resolve",
+        new=make_resolver(),
+    ):
+        yield
+
+
 # --- Fake Playwright client -------------------------------------------------------
 
 
