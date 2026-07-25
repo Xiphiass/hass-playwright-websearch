@@ -32,8 +32,7 @@ the architectural decisions and `CONTEXT.md` for the glossary.
 
 - **`open_url`** — open a single URL and return its full rendered readable text for a
   deep read.
-- **`search_web`** — query SearXNG and return short per-result extracts so the LLM can
-  scan sources and pick one worth opening. *(Not yet implemented — see status below.)*
+- **`search_web`** — query SearXNG, render each result page in a real browser, and return a budgeted extract. Results past the total ceiling appear as lightweight stubs (url + title) so the LLM can still see the full set and decide to `open_url` one.
 
 ## Status
 
@@ -42,8 +41,14 @@ Early development. The current tracer bullet
 the installable skeleton, the config flow, and a working `open_url` path end-to-end
 (config → websocket connect → render → tool result), plus the fake-boundary test harness.
 
-Still to come: `search_web`, the two-tier Content Budget, paragraph-boundary truncation,
-Readability-style extraction, SSRF protection, and SearXNG-snippet fallback.
+`search_web` is now implemented: it queries SearXNG, renders each result page in a real
+browser, and returns a budgeted extract. Results past the total ceiling appear as
+lightweight stubs (url + title, `source: "stub"`) so the LLM can still see the full set
+and decide to `open_url` one. The two-tier Content Budget (total ceiling + per-result cap)
+is in place.
+
+Still to come: paragraph-boundary truncation, Readability-style extraction, SSRF
+protection, and SearXNG-snippet fallback.
 
 ## Installation
 
