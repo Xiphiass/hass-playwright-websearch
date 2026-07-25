@@ -199,10 +199,10 @@ async def test_per_result_cap_truncates_on_paragraph_boundary(
     assert out["results"][0]["text"] == "First para kept."
 
 
-async def test_total_ceiling_drops_later_results(
+async def test_total_ceiling_exhausted_emits_stubs(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
-    """Once the total ceiling is spent, later results are dropped."""
+    """Once the total ceiling is spent, later results appear as stubs (url + title)."""
     results = _searxng_results(3)
     aioclient_mock.get(SEARCH_ENDPOINT, json=fake_searxng_response(results))
 
@@ -217,7 +217,14 @@ async def test_total_ceiling_drops_later_results(
     with patch(_RENDER_PATH, new=factory):
         out = await tool.async_call(hass, _tool_input("cats"), _llm_context())
 
-    assert len(out["results"]) == 1
+    # All 3 results are present: first is rendered, the rest are stubs.
+    assert len(out["results"]) == 3
+    assert out["results"][0]["source"] == "rendered"
+    assert out["results"][1]["source"] == "stub"
+    assert out["results"][2]["source"] == "stub"
+    assert out["results"][1]["text"] == ""
+    assert out["results"][2]["text"] == ""
+    assert "stub" in out["results"][1].get("note", "")
 
 
 async def test_num_results_limits_query(

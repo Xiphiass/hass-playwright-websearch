@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypeAlias
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
@@ -9,7 +11,7 @@ from homeassistant.helpers import llm
 from .const import DOMAIN
 from .llm_api import WebSearchAPI
 
-type PlaywrightWebSearchConfigEntry = ConfigEntry
+PlaywrightWebSearchConfigEntry: TypeAlias = ConfigEntry
 
 
 async def async_setup_entry(
