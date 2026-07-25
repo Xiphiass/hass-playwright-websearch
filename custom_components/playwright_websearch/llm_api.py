@@ -28,6 +28,7 @@ from .const import (
     CONF_PLAYWRIGHT_WS_URL,
     CONF_RENDER_TIMEOUT,
     CONF_SEARXNG_URL,
+    CONF_SNIPPET_CEILING,
     CONF_TOTAL_CEILING,
     DEFAULT_CONCURRENCY,
     DEFAULT_CONTENT_FLOOR,
@@ -35,6 +36,7 @@ from .const import (
     DEFAULT_NUM_RESULTS,
     DEFAULT_PER_RESULT_CAP,
     DEFAULT_RENDER_TIMEOUT,
+    DEFAULT_SNIPPET_CEILING,
     DEFAULT_TOTAL_CEILING,
 )
 from .render import render_page
@@ -136,6 +138,7 @@ class SearchWebTool(llm.Tool):
         timeout = options.get(CONF_RENDER_TIMEOUT, DEFAULT_RENDER_TIMEOUT)
         per_result_cap = options.get(CONF_PER_RESULT_CAP, DEFAULT_PER_RESULT_CAP)
         total_ceiling = options.get(CONF_TOTAL_CEILING, DEFAULT_TOTAL_CEILING)
+        snippet_ceiling = options.get(CONF_SNIPPET_CEILING, DEFAULT_SNIPPET_CEILING)
         concurrency = options.get(CONF_CONCURRENCY, DEFAULT_CONCURRENCY)
         content_floor = options.get(CONF_CONTENT_FLOOR, DEFAULT_CONTENT_FLOOR)
         trusted = trusted_hosts(searxng_url, ws_url)
@@ -163,17 +166,15 @@ class SearchWebTool(llm.Tool):
             *(_render_one(result["url"]) for result in results)
         )
 
-        # Assemble output in result order, spending the total ceiling as we go. A
-        # kept-partial render surfaces as "ok" (ticket #3) and is treated as normal
-        # content; error/empty renders fall back to the SearXNG snippet.
+        # Assemble output in result order. We spend the total ceiling on rendered
+        # content; once it's exhausted we emit lightweight stub entries (url + title)
+        # so the LLM can still see every requested result.  A separate snippet_ceiling
+        # bounds the stub tier so the total payload never grows unbounded.
         out: list[JsonObjectType] = []
         remaining = total_ceiling
-        dropped = 0
-        for result, render in zip(results, rendered):
-            if remaining <= 0:
-                dropped += 1
-                continue
+        snippet_remaining = snippet_ceiling
 
+        for result, render in zip(results, rendered):
             if render["status"] == "ok":
                 raw_text = render["text"]
                 source = "rendered"
@@ -183,8 +184,27 @@ class SearchWebTool(llm.Tool):
                 source = "snippet"
                 note = _SNIPPET_NOTE
 
-            text = truncate_to_cap(raw_text, min(per_result_cap, remaining))
-            remaining -= len(text)
+            if remaining > 0:
+                # Normal path: spend the total ceiling on rendered/snippet text.
+                text = truncate_to_cap(raw_text, min(per_result_cap, remaining))
+                remaining -= len(text)
+            else:
+                # Over ceiling: emit a stub (url + title only).
+                text = ""
+                source = "stub"
+                note = "total ceiling exhausted; use open_url to read full page"
+                # Still count stub chars against snippet_remaining so the stub tier
+                # itself stays bounded.
+                stub_len = len(result["url"]) + len(result["title"]) + len(note or "")
+                if snippet_remaining > 0:
+                    snippet_remaining -= stub_len
+                else:
+                    # Stub tier itself exhausted — drop remaining stubs.
+                    _LOGGER.debug(
+                        "search_web dropped %d stub(s) after hitting the snippet ceiling",
+                        len(results) - len(out),
+                    )
+                    break
 
             entry: JsonObjectType = {
                 "url": result["url"],
@@ -195,12 +215,6 @@ class SearchWebTool(llm.Tool):
             if note is not None:
                 entry["note"] = note
             out.append(entry)
-
-        if dropped:
-            _LOGGER.debug(
-                "search_web dropped %d result(s) after hitting the total ceiling",
-                dropped,
-            )
 
         return {"query": query, "results": out}
 
