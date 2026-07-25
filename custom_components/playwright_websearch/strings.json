@@ -29,7 +29,8 @@
           "total_ceiling": "Total character ceiling",
           "full_page_cap": "Full-page character cap (open_url)",
           "concurrency": "Concurrent render cap",
-          "content_floor": "Minimum word count to keep a partial render"
+          "content_floor": "Minimum word count to keep a partial render",
+          "snippet_ceiling": "Snippet ceiling"
         }
       }
     }

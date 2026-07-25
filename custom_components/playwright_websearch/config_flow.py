@@ -23,6 +23,7 @@ from .const import (
     CONF_PLAYWRIGHT_WS_URL,
     CONF_RENDER_TIMEOUT,
     CONF_SEARXNG_URL,
+    CONF_SNIPPET_CEILING,
     CONF_TOTAL_CEILING,
     DEFAULT_CONCURRENCY,
     DEFAULT_CONTENT_FLOOR,
@@ -30,6 +31,7 @@ from .const import (
     DEFAULT_NUM_RESULTS,
     DEFAULT_PER_RESULT_CAP,
     DEFAULT_RENDER_TIMEOUT,
+    DEFAULT_SNIPPET_CEILING,
     DEFAULT_TOTAL_CEILING,
     DOMAIN,
 )
@@ -73,6 +75,10 @@ def _options_schema(options: dict[str, Any]) -> vol.Schema:
             vol.Required(
                 CONF_CONTENT_FLOOR,
                 default=options.get(CONF_CONTENT_FLOOR, DEFAULT_CONTENT_FLOOR),
+            ): vol.All(int, vol.Range(min=0)),
+            vol.Required(
+                CONF_SNIPPET_CEILING,
+                default=options.get(CONF_SNIPPET_CEILING, DEFAULT_SNIPPET_CEILING),
             ): vol.All(int, vol.Range(min=0)),
         }
     )
