@@ -47,8 +47,14 @@ lightweight stubs (url + title, `source: "stub"`) so the LLM can still see the f
 and decide to `open_url` one. The two-tier Content Budget (total ceiling + per-result cap)
 is in place.
 
-Still to come: paragraph-boundary truncation, Readability-style extraction, SSRF
-protection, and SearXNG-snippet fallback.
+All planned features for the tracer bullet are now implemented: paragraph-boundary
+truncation, Readability-style extraction, SSRF protection, SearXNG-snippet fallback,
+full-page cap, and the two-tier Content Budget. The integration is functional and
+ready for real-world testing.
+
+## Requirements
+
+- **Home Assistant 2026.8.1 or newer** — the integration targets versions >= 2026.8.1.
 
 ## Installation
 
