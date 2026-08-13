@@ -225,7 +225,7 @@ async def test_total_ceiling_exhausted_emits_stubs(
     assert out["results"][2]["source"] == "stub"
     assert out["results"][1]["text"] == ""
     assert out["results"][2]["text"] == ""
-    assert "stub" in out["results"][1].get("note", "")
+    assert "total ceiling exhausted" in out["results"][1].get("note", "")
 
 
 async def test_num_results_limits_query(
